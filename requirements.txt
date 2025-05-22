@@ -1,6 +1,6 @@
-streamlit>=1.33.0
+streamlit
 pandas
 numpy
 requests
 openai
-selenium
+
