@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon May 19 08:56:46 2025
+Created on Tue May 20 06:37:04 2025
 
 @author: Sahil
 """
+
 
 import streamlit as st
 import pandas as pd
@@ -11,10 +12,6 @@ import numpy as np
 import requests
 from openai import OpenAI
 import openai
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 import time
 
 # ---- Streamlit App Setup ----
@@ -80,22 +77,10 @@ def search_website_brave(query):
     return None
 
 # ---- Web Scraping ----
-@st.cache_resource
-def get_driver():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--window-size=1920x1080")
-
-    service = Service(ChromeDriverManager().install())
-    return webdriver.Chrome(service=service, options=chrome_options)
 
 SCRAPER_API_KEY = "3ee31ccc3c9d8d4406c9b41ac4b75103"
 
 def get_website_text(url):
-    # Try ScraperAPI first
     try:
         api_url = f"https://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
         response = requests.get(api_url, timeout=60)
@@ -103,28 +88,18 @@ def get_website_text(url):
         text = response.text
 
         if "not available in your region" in text.lower() or len(text.strip()) < 100:
-            st.warning("ScraperAPI returned restricted or empty content. Switching to Selenium...")
-            raise ValueError("Fallback to Selenium")
-
-        return text[:3000]
-
-    except Exception as e:
-        st.warning(f"ScraperAPI failed or content was empty: {e}")
-        st.info("Trying with Selenium now...")
-
-        try:
-            driver = get_driver()
-            driver.get(url)
-            time.sleep(5)  # Give time for page to render fully
-            body_text = driver.find_element(By.TAG_NAME, "body").text
-            driver.quit()
-            return body_text[:4000]
-        except Exception as se:
-            st.error(f"Selenium also failed: {se}")
+            st.warning("ScraperAPI returned restricted or empty content.")
             return ""
 
+        return text[:4000]
+
+    except Exception as e:
+        st.error(f"ScraperAPI failed: {e}")
+        return ""
+
 # ---- OpenAI Setup ----
-openai.api_key = "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"
+openai.api_key = "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"
+
 client = OpenAI(api_key=openai.api_key)
 
 def summarize_business(content: str) -> str:
